@@ -10,6 +10,9 @@ let lastCommand = "NONE";
 // Stores last data sent by the SIM800L device
 let lastData = {};
 
+// Memory counter variable
+let counter = 0;
+
 // Base route (for testing)
 app.get('/', (req, res) => {
   res.send("🚀 SIM800L Cloud Server Running!");
@@ -35,6 +38,28 @@ app.post('/log', (req, res) => {
 // You GET this on your phone to see SIM800L status
 app.get('/status', (req, res) => {
   res.json(lastData);
+});
+
+// =========================
+//       COUNTER API
+// =========================
+
+// Update counter (POST)
+// Body must contain only a number
+app.post('/counter', (req, res) => {
+  const value = Number(req.body);
+
+  if (isNaN(value)) {
+    return res.status(400).send("Invalid value — must be a number.");
+  }
+
+  counter = value;
+  res.send(`Counter updated to ${counter}`);
+});
+
+// Read counter (GET)
+app.get('/counter', (req, res) => {
+  res.json({ counter });
 });
 
 // Start server
