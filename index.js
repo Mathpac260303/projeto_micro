@@ -10,8 +10,15 @@ let lastCommand = "NONE";
 // Stores last data sent by the SIM800L device
 let lastData = {};
 
-// Memory counter variable
-let counter = 0;
+// Stores the latest readings of 5 sensors from the ESP
+let sensorData = {
+  s1: null,
+  s2: null,
+  s3: null,
+  s4: null,
+  s5: null,
+  updatedAt: null  // timestamp of last update
+};
 
 // Base route (for testing)
 app.get('/', (req, res) => {
@@ -41,25 +48,39 @@ app.get('/status', (req, res) => {
 });
 
 // =========================
-//       COUNTER API
+//   SENSOR MEMORY OBJECT
 // =========================
 
-// Update counter (POST)
-// Body must contain only a number
-app.post('/counter', (req, res) => {
-  const value = Number(req.body);
+// ESP32 sends the latest readings of 5 sensors here (every ~10s)
+app.post('/sensors', (req, res) => {
+  const { s1, s2, s3, s4, s5 } = req.body;
 
-  if (isNaN(value)) {
-    return res.status(400).send("Invalid value — must be a number.");
+  // Basic validation: all 5 fields must exist
+  if (
+    s1 === undefined ||
+    s2 === undefined ||
+    s3 === undefined ||
+    s4 === undefined ||
+    s5 === undefined
+  ) {
+    return res.status(400).send("Missing one or more sensor fields (s1..s5).");
   }
 
-  counter = value;
-  res.send(`Counter updated to ${counter}`);
+  sensorData = {
+    s1,
+    s2,
+    s3,
+    s4,
+    s5,
+    updatedAt: new Date().toISOString()
+  };
+
+  res.send("SENSOR DATA UPDATED");
 });
 
-// Read counter (GET)
-app.get('/counter', (req, res) => {
-  res.json({ counter });
+// Anyone can GET the last sensor readings stored in memory
+app.get('/sensors', (req, res) => {
+  res.json(sensorData);
 });
 
 // Start server
