@@ -1,28 +1,54 @@
 const express = require("express");
 const app = express();
 
-let espValue = "No value yet";
+app.use(express.json());  // allow JSON POST bodies
 
-// Show the last value received from ESP
+// Object to store ESP data
+let sensorData = {
+  s1: null,
+  s2: null,
+  s3: null,
+  s4: null,
+  s5: null,
+  timestamp: null
+};
+
+// Homepage shows last received data
 app.get("/", (req, res) => {
   res.send(`
-    🚀 SIM800L Cloud Server Running! <br>
-    Last value received: ${espValue}
+    🚀 SIM800L Cloud Server Running! <br><br>
+    <b>Last sensor update:</b><br>
+    s1: ${sensorData.s1}<br>
+    s2: ${sensorData.s2}<br>
+    s3: ${sensorData.s3}<br>
+    s4: ${sensorData.s4}<br>
+    s5: ${sensorData.s5}<br>
+    time: ${sensorData.timestamp}
   `);
 });
 
-// ESP updates the value using GET /update?value=123
-app.get("/update", (req, res) => {
-  const v = req.query.value;
+// ESP sends POST with JSON
+app.post("/update", (req, res) => {
+  const { s1, s2, s3, s4, s5 } = req.body;
 
-  if (!v) {
-    return res.send("ERROR: missing ?value=");
+  // Validate presence
+  if (s1 === undefined || s2 === undefined || s3 === undefined || s4 === undefined || s5 === undefined) {
+    return res.status(400).send("ERROR: missing one or more sensor fields (s1–s5)");
   }
 
-  espValue = v;
-  console.log("ESP sent:", v);
+  // Save values
+  sensorData = {
+    s1,
+    s2,
+    s3,
+    s4,
+    s5,
+    timestamp: new Date().toISOString()
+  };
 
-  res.send("Value updated successfully");
+  console.log("ESP sent:", sensorData);
+
+  res.send("Sensor data updated successfully");
 });
 
 const PORT = process.env.PORT || 3000;
