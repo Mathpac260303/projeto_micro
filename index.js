@@ -1,55 +1,42 @@
 const express = require("express");
 const app = express();
 
-app.use(express.json());  // allow JSON POST bodies
-
-// Object to store ESP data
-let sensorData = {
-  s1: null,
-  s2: null,
-  s3: null,
-  s4: null,
-  s5: null,
-  timestamp: null
+let sensors = {
+    s1: 0,
+    s2: 0,
+    s3: 0,
+    s4: 0,
+    s5: 0
 };
 
-// Homepage shows last received data
+// Endpoint ESP32 uses to update values
+app.get("/update", (req, res) => {
+    let { s1, s2, s3, s4, s5 } = req.query;
+
+    if (s1) sensors.s1 = Number(s1);
+    if (s2) sensors.s2 = Number(s2);
+    if (s3) sensors.s3 = Number(s3);
+    if (s4) sensors.s4 = Number(s4);
+    if (s5) sensors.s5 = Number(s5);
+
+    console.log("Received update:", sensors);
+
+    res.send("OK");
+});
+
+// Endpoint to show current values in browser
 app.get("/", (req, res) => {
-  res.send(`
-    🚀 SIM800L Cloud Server Running! <br><br>
-    <b>Last sensor update:</b><br>
-    s1: ${sensorData.s1}<br>
-    s2: ${sensorData.s2}<br>
-    s3: ${sensorData.s3}<br>
-    s4: ${sensorData.s4}<br>
-    s5: ${sensorData.s5}<br>
-    time: ${sensorData.timestamp}
-  `);
+    res.send(`
+        <h2>Sensor Values</h2>
+        <p>s1 = ${sensors.s1}</p>
+        <p>s2 = ${sensors.s2}</p>
+        <p>s3 = ${sensors.s3}</p>
+        <p>s4 = ${sensors.s4}</p>
+        <p>s5 = ${sensors.s5}</p>
+    `);
 });
 
-// ESP sends POST with JSON
-app.post("/update", (req, res) => {
-  const { s1, s2, s3, s4, s5 } = req.body;
-
-  // Validate presence
-  if (s1 === undefined || s2 === undefined || s3 === undefined || s4 === undefined || s5 === undefined) {
-    return res.status(400).send("ERROR: missing one or more sensor fields (s1–s5)");
-  }
-
-  // Save values
-  sensorData = {
-    s1,
-    s2,
-    s3,
-    s4,
-    s5,
-    timestamp: new Date().toISOString()
-  };
-
-  console.log("ESP sent:", sensorData);
-
-  res.send("Sensor data updated successfully");
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+    console.log("Server running on port " + port);
 });
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Server running on port " + PORT));
