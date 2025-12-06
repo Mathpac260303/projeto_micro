@@ -1,3 +1,18 @@
+<script>
+// ================================
+// CONFIGURATION
+// ================================
+// Define a MAX VALUE for each sensor
+const GRAPH_MAX = {
+    s1: 100,
+    s2: 200,
+    s3: 500,
+    s4: 1000,
+    s5: 50
+};
+
+let GRAPH_TICKS = 5;   // Y-axis labels count
+
 // History for each sensor: last 10 values
 const history = {
     s1: [],
@@ -16,6 +31,9 @@ const canvases = {
     s5: document.getElementById("chart5")
 };
 
+// ================================
+// FETCH + UPDATE
+// ================================
 async function refresh() {
     try {
         const res = await fetch("/data");
@@ -26,76 +44,95 @@ async function refresh() {
         updateSensor("s3", Number(data.s3));
         updateSensor("s4", Number(data.s4));
         updateSensor("s5", Number(data.s5));
+
     } catch (err) {
         console.log("Error fetching data:", err);
     }
 }
 
 function updateSensor(id, value) {
-    // Update numeric display
+
+    // Update display
     document.getElementById(id).textContent = value;
 
-    // Clamp value between 0 and 100 (adjust if your range is different)
+    // Clamp according to each sensor's max
+    const max = GRAPH_MAX[id];
     if (value < 0) value = 0;
-    if (value > 100) value = 100;
+    if (value > max) value = max;
 
-    // Update history
+    // Store history (max 10 values)
     history[id].push(value);
     if (history[id].length > 10) history[id].shift();
 
-    // Redraw the graph for this sensor
-    drawGraph(canvases[id], history[id]);
+    // Draw each graph with its custom max
+    drawGraph(canvases[id], history[id], max);
 }
 
-function drawGraph(canvas, values) {
+// ================================
+// DRAW GRAPH (with custom max)
+// ================================
+function drawGraph(canvas, values, maxValue) {
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
     const width = canvas.clientWidth;
     const height = canvas.clientHeight || 120;
 
-    // Ensure canvas internal size matches CSS size
     canvas.width = width;
     canvas.height = height;
 
-    // Clear previous drawing
     ctx.clearRect(0, 0, width, height);
 
     if (values.length === 0) return;
 
-    // Draw axis baseline (optional)
-    // ctx.strokeStyle = "#444";
-    // ctx.beginPath();
-    // ctx.moveTo(0, height - 1);
-    // ctx.lineTo(width, height - 1);
-    // ctx.stroke();
+    const marginLeft = 30; 
+    const marginBottom = 5;
 
-    // Draw the line for values
+    // ================================
+    // Y-AXIS LABELS + GRID
+    // ================================
+    ctx.fillStyle = "#ccc";
+    ctx.font = "10px Arial";
+    ctx.textAlign = "right";
+
+    for (let i = 0; i <= GRAPH_TICKS; i++) {
+        const val = (maxValue / GRAPH_TICKS) * i;
+        const y = height - (i / GRAPH_TICKS) * (height - marginBottom);
+
+        ctx.fillText(val.toFixed(0), marginLeft - 5, y + 3);
+
+        ctx.strokeStyle = "#333";
+        ctx.beginPath();
+        ctx.moveTo(marginLeft, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+    }
+
+    // ================================
+    // LINE GRAPH
+    // ================================
     ctx.strokeStyle = "#4db8ff";
     ctx.lineWidth = 2;
     ctx.beginPath();
 
     const n = values.length;
-    // Avoid division by zero
-    const stepX = n > 1 ? width / (n - 1) : width;
+    const stepX = n > 1 ? (width - marginLeft) / (n - 1) : width;
 
     for (let i = 0; i < n; i++) {
         const v = values[i];
+        const y = height - marginBottom - (v / maxValue) * (height - marginBottom);
+        const x = marginLeft + stepX * i;
 
-        // Map value 0–100 → y coordinate (0 at top, 100 at bottom)
-        const y = height - (v / 100) * height;
-        const x = stepX * i;
-
-        if (i === 0) {
-            ctx.moveTo(x, y);
-        } else {
-            ctx.lineTo(x, y);
-        }
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
     }
 
     ctx.stroke();
 }
 
-// Initial run + periodic
+// ================================
+// INITIAL + INTERVAL
+// ================================
 refresh();
 setInterval(refresh, 5000);
+</script>
