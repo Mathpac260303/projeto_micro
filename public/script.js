@@ -1,5 +1,5 @@
-// History for each sensor (start empty)
-let history = {
+// History for each sensor: last 10 values
+const history = {
     s1: [],
     s2: [],
     s3: [],
@@ -7,77 +7,95 @@ let history = {
     s5: []
 };
 
-let charts = {};
-
-function createChart(canvasId) {
-    return new Chart(document.getElementById(canvasId), {
-        type: "line",
-        data: {
-            labels: Array(10).fill(""),
-            datasets: [{
-                data: Array(10).fill(0),
-                borderColor: "#4db8ff",
-                backgroundColor: "rgba(77,184,255,0.2)",
-                tension: 0.3
-            }]
-        },
-        options: {
-            animation: false,
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    min: 0,
-                    max: 120,   // LOCKED — prevents infinite scaling
-                    beginAtZero: true
-                }
-            },
-            plugins: {
-                legend: { display: false }
-            }
-        }
-    });
-}
-
-charts.s1 = createChart("chart1");
-charts.s2 = createChart("chart2");
-charts.s3 = createChart("chart3");
-charts.s4 = createChart("chart4");
-charts.s5 = createChart("chart5");
+// Canvas references for each sensor
+const canvases = {
+    s1: document.getElementById("chart1"),
+    s2: document.getElementById("chart2"),
+    s3: document.getElementById("chart3"),
+    s4: document.getElementById("chart4"),
+    s5: document.getElementById("chart5")
+};
 
 async function refresh() {
-    const res = await fetch("/data");
-    const data = await res.json();
+    try {
+        const res = await fetch("/data");
+        const data = await res.json();
 
-    updateSensor("s1", Number(data.s1));
-    updateSensor("s2", Number(data.s2));
-    updateSensor("s3", Number(data.s3));
-    updateSensor("s4", Number(data.s4));
-    updateSensor("s5", Number(data.s5));
+        updateSensor("s1", Number(data.s1));
+        updateSensor("s2", Number(data.s2));
+        updateSensor("s3", Number(data.s3));
+        updateSensor("s4", Number(data.s4));
+        updateSensor("s5", Number(data.s5));
+    } catch (err) {
+        console.log("Error fetching data:", err);
+    }
 }
 
-function updateSensor(id, newValue) {
-    document.getElementById(id).textContent = newValue;
+function updateSensor(id, value) {
+    // Update numeric display
+    document.getElementById(id).textContent = value;
 
-    // First-time initialization: fill history with the first value
-    if (history[id].length === 0) {
-        history[id] = Array(10).fill(newValue);
-        charts[id].data.datasets[0].data = history[id];
-        charts[id].update();
-        return;
-    }
+    // Clamp value between 0 and 100 (adjust if your range is different)
+    if (value < 0) value = 0;
+    if (value > 100) value = 100;
 
-    // Add new value
-    history[id].push(newValue);
-
-    // Keep only 10 values
+    // Update history
+    history[id].push(value);
     if (history[id].length > 10) history[id].shift();
 
-    // Update chart
-    charts[id].data.datasets[0].data = history[id];
-    charts[id].update();
+    // Redraw the graph for this sensor
+    drawGraph(canvases[id], history[id]);
 }
 
-// Update every 5 seconds
+function drawGraph(canvas, values) {
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight || 120;
+
+    // Ensure canvas internal size matches CSS size
+    canvas.width = width;
+    canvas.height = height;
+
+    // Clear previous drawing
+    ctx.clearRect(0, 0, width, height);
+
+    if (values.length === 0) return;
+
+    // Draw axis baseline (optional)
+    // ctx.strokeStyle = "#444";
+    // ctx.beginPath();
+    // ctx.moveTo(0, height - 1);
+    // ctx.lineTo(width, height - 1);
+    // ctx.stroke();
+
+    // Draw the line for values
+    ctx.strokeStyle = "#4db8ff";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+
+    const n = values.length;
+    // Avoid division by zero
+    const stepX = n > 1 ? width / (n - 1) : width;
+
+    for (let i = 0; i < n; i++) {
+        const v = values[i];
+
+        // Map value 0–100 → y coordinate (0 at top, 100 at bottom)
+        const y = height - (v / 100) * height;
+        const x = stepX * i;
+
+        if (i === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    }
+
+    ctx.stroke();
+}
+
+// Initial run + periodic
 refresh();
 setInterval(refresh, 5000);
