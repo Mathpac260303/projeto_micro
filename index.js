@@ -1,42 +1,42 @@
 const express = require("express");
 const app = express();
 
-// Serve frontend files from public/
-app.use(express.static("public"));
+app.use(express.text());
+app.use(express.json());
 
-let sensors = {
-    s1: 0,
-    s2: 0,
-    s3: 0,
-    s4: 0,
-    s5: 0
-};
+// Stores last command sent by you (from your phone)
+let lastCommand = "NONE";
 
-// ESP32 or manual update endpoint
-app.get("/update", (req, res) => {
-    let { s1, s2, s3, s4, s5 } = req.query;
+// Stores last data sent by the SIM800L device
+let lastData = {};
 
-    if (s1 !== undefined) sensors.s1 = Number(s1);
-    if (s2 !== undefined) sensors.s2 = Number(s2);
-    if (s3 !== undefined) sensors.s3 = Number(s3);
-    if (s4 !== undefined) sensors.s4 = Number(s4);
-    if (s5 !== undefined) sensors.s5 = Number(s5);
-
-    console.log("Received update:", sensors);
-    res.send("OK");
+// Base route (for testing)
+app.get('/', (req, res) => {
+  res.send("🚀 SIM800L Cloud Server Running!");
 });
 
-// New JSON endpoint for frontend auto-update
-app.get("/data", (req, res) => {
-    res.json(sensors);
+// SIM800L GETs this to receive a command
+app.get('/cmd', (req, res) => {
+  res.send(lastCommand);
 });
 
-// Send index.html when user visits /
-app.get("/", (req, res) => {
-    res.sendFile(__dirname + "/public/index.html");
+// You POST a command here (from website or phone)
+app.post('/cmd', (req, res) => {
+  lastCommand = req.body;
+  res.send("COMMAND RECEIVED: " + req.body);
 });
 
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-    console.log("Server running on port " + port);
+// SIM800L POSTs telemetry/status here
+app.post('/log', (req, res) => {
+  lastData = req.body;
+  res.send("LOG RECEIVED");
 });
+
+// You GET this on your phone to see SIM800L status
+app.get('/status', (req, res) => {
+  res.json(lastData);
+});
+
+// Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log("Server running on port " + PORT));
