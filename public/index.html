@@ -2,48 +2,35 @@
 <html>
 <head>
     <title>Sensor Dashboard</title>
-
-    <!-- Load Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
 <h1>Sensor Dashboard</h1>
 
-<div class="grid">
+<div class="sensor">
+    <p>S1: <span id="s1">0</span></p>
+    <canvas id="chart1" width="300" height="120"></canvas>
+</div>
 
-    <div class="card">
-        <h2>Sensor 1</h2>
-        <div class="value" id="s1">0</div>
-        <canvas id="chart1"></canvas>
-    </div>
+<div class="sensor">
+    <p>S2: <span id="s2">0</span></p>
+    <canvas id="chart2" width="300" height="120"></canvas>
+</div>
 
-    <div class="card">
-        <h2>Sensor 2</h2>
-        <div class="value" id="s2">0</div>
-        <canvas id="chart2"></canvas>
-    </div>
+<div class="sensor">
+    <p>S3: <span id="s3">0</span></p>
+    <canvas id="chart3" width="300" height="120"></canvas>
+</div>
 
-    <div class="card">
-        <h2>Sensor 3</h2>
-        <div class="value" id="s3">0</div>
-        <canvas id="chart3"></canvas>
-    </div>
+<div class="sensor">
+    <p>S4: <span id="s4">0</span></p>
+    <canvas id="chart4" width="300" height="120"></canvas>
+</div>
 
-    <div class="card">
-        <h2>Sensor 4</h2>
-        <div class="value" id="s4">0</div>
-        <canvas id="chart4"></canvas>
-    </div>
-
-    <div class="card">
-        <h2>Sensor 5</h2>
-        <div class="value" id="s5">0</div>
-        <canvas id="chart5"></canvas>
-    </div>
-
+<div class="sensor">
+    <p>S5: <span id="s5">0</span></p>
+    <canvas id="chart5" width="300" height="120"></canvas>
 </div>
 
 <script src="script.js"></script>
