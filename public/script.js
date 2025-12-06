@@ -47,50 +47,40 @@ function updateSensor(id, value) {
     drawGraph(canvases[id], history[id]);
 }
 
-function drawGraph(canvas, values) {
+function drawGraph(id, canvas, values) {
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
     const width = canvas.clientWidth;
     const height = canvas.clientHeight || 120;
 
-    // Ensure canvas internal size matches CSS size
+    // Ensure canvas internal resolution matches CSS
     canvas.width = width;
     canvas.height = height;
 
-    // Clear previous drawing
     ctx.clearRect(0, 0, width, height);
 
     if (values.length === 0) return;
 
-    // Draw axis baseline (optional)
-    // ctx.strokeStyle = "#444";
-    // ctx.beginPath();
-    // ctx.moveTo(0, height - 1);
-    // ctx.lineTo(width, height - 1);
-    // ctx.stroke();
+    // Get this sensor's max Y-value
+    const maxValue = maxY[id] || 100;
 
-    // Draw the line for values
     ctx.strokeStyle = "#4db8ff";
     ctx.lineWidth = 2;
     ctx.beginPath();
 
     const n = values.length;
-    // Avoid division by zero
     const stepX = n > 1 ? width / (n - 1) : width;
 
     for (let i = 0; i < n; i++) {
         const v = values[i];
 
-        // Map value 0–100 → y coordinate (0 at top, 100 at bottom)
-        const y = height - (v / 100) * height;
+        // scale v to canvas height according to maxValue
+        const y = height - (v / maxValue) * height;
         const x = stepX * i;
 
-        if (i === 0) {
-            ctx.moveTo(x, y);
-        } else {
-            ctx.lineTo(x, y);
-        }
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
     }
 
     ctx.stroke();
