@@ -74,5 +74,5 @@ function updateSensor(id, newValue) {
     charts[id].update();
 }
 
-setInterval(refresh, 1000);
+setInterval(refresh, 5000);
 refresh();
