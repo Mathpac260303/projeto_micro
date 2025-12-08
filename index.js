@@ -1,41 +1,62 @@
 const express = require("express");
 const app = express();
 
+// Allow JSON body parsing
+app.use(express.json());
+
 // Serve frontend files from public/
 app.use(express.static("public"));
 
+// =======================================
+// Stored sensor data (latest values)
+// =======================================
 let sensors = {
-    s1: 0,
-    s2: 0,
-    s3: 0,
-    s4: 0,
-    s5: 0
+    temperature: 0,
+    humidity: 0,
+    uv: 0,
+    gas: 0,
+    latitude: 0,
+    longitude: 0,
+    hour: 0,
+    minute: 0
 };
 
-// ESP32 or manual update endpoint
-app.get("/update", (req, res) => {
-    let { s1, s2, s3, s4, s5 } = req.query;
+// =======================================
+// ESP32 -> Server : POST /update
+// =======================================
+app.post("/update", (req, res) => {
+    const data = req.body;
 
-    if (s1 !== undefined) sensors.s1 = Number(s1);
-    if (s2 !== undefined) sensors.s2 = Number(s2);
-    if (s3 !== undefined) sensors.s3 = Number(s3);
-    if (s4 !== undefined) sensors.s4 = Number(s4);
-    if (s5 !== undefined) sensors.s5 = Number(s5);
+    // Update only if value exists
+    if (data.temperature !== undefined) sensors.temperature = Number(data.temperature);
+    if (data.humidity !== undefined) sensors.humidity = Number(data.humidity);
+    if (data.uv !== undefined) sensors.uv = Number(data.uv);
+    if (data.gas !== undefined) sensors.gas = Number(data.gas);
 
-    console.log("Received update:", sensors);
-    res.send("OK");
+    if (data.latitude !== undefined) sensors.latitude = Number(data.latitude);
+    if (data.longitude !== undefined) sensors.longitude = Number(data.longitude);
+
+    if (data.hour !== undefined) sensors.hour = Number(data.hour);
+    if (data.minute !== undefined) sensors.minute = Number(data.minute);
+
+    console.log("Updated sensor data:", sensors);
+
+    res.json({ status: "ok" });
 });
 
-// New JSON endpoint for frontend auto-update
+// =======================================
+// FRONTEND -> GET /data
+// =======================================
 app.get("/data", (req, res) => {
     res.json(sensors);
 });
 
-// Send index.html when user visits /
+// Root route
 app.get("/", (req, res) => {
     res.sendFile(__dirname + "/public/index.html");
 });
 
+// Start server
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log("Server running on port " + port);
