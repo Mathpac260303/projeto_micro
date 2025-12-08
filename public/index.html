@@ -8,29 +8,35 @@
 
 <h1>Sensor Dashboard</h1>
 
-<div class="sensor">
-    <p>S1: <span id="s1">0</span></p>
-    <canvas id="chart1" width="300" height="120"></canvas>
+<!-- GPS & Time Section -->
+<div class="gps">
+    <p>Latitude: <span id="lat">--</span></p>
+    <p>Longitude: <span id="lng">--</span></p>
+    <p>Time (UTC): <span id="time">--:--</span></p>
 </div>
 
+<!-- Temperature -->
 <div class="sensor">
-    <p>S2: <span id="s2">0</span></p>
-    <canvas id="chart2" width="300" height="120"></canvas>
+    <p>Temperature (°C): <span id="temp">0</span></p>
+    <canvas id="chart_temp" width="300" height="120"></canvas>
 </div>
 
+<!-- Humidity -->
 <div class="sensor">
-    <p>S3: <span id="s3">0</span></p>
-    <canvas id="chart3" width="300" height="120"></canvas>
+    <p>Humidity (%): <span id="hum">0</span></p>
+    <canvas id="chart_hum" width="300" height="120"></canvas>
 </div>
 
+<!-- UV Index -->
 <div class="sensor">
-    <p>S4: <span id="s4">0</span></p>
-    <canvas id="chart4" width="300" height="120"></canvas>
+    <p>UV Index: <span id="uv">0</span></p>
+    <canvas id="chart_uv" width="300" height="120"></canvas>
 </div>
 
+<!-- Gas Level -->
 <div class="sensor">
-    <p>S5: <span id="s5">0</span></p>
-    <canvas id="chart5" width="300" height="120"></canvas>
+    <p>Gas Level (0–10): <span id="gas">0</span></p>
+    <canvas id="chart_gas" width="300" height="120"></canvas>
 </div>
 
 <script src="script.js"></script>
