@@ -1,68 +1,71 @@
 // ================================
-// CONFIG: Max value per sensor
+// GRAPH CONFIG
 // ================================
 const GRAPH_MAX = {
-    s1: 100,
-    s2: 200,
-    s3: 500,
-    s4: 1000,
-    s5: 50
+    temp: 50,     // °C max
+    hum: 100,     // %
+    uv: 12,       // UV Index range
+    gas: 10       // 0–10 scale
 };
 
-let GRAPH_TICKS = 5; // number of labels on Y axis
+let GRAPH_TICKS = 5;
 
 // ================================
-// Sensor history (last 10 values)
+// History storage (last 10 values)
 // ================================
 const history = {
-    s1: [],
-    s2: [],
-    s3: [],
-    s4: [],
-    s5: []
+    temp: [],
+    hum: [],
+    uv: [],
+    gas: []
 };
 
 // Canvas references
 const canvases = {
-    s1: document.getElementById("chart1"),
-    s2: document.getElementById("chart2"),
-    s3: document.getElementById("chart3"),
-    s4: document.getElementById("chart4"),
-    s5: document.getElementById("chart5")
+    temp: document.getElementById("chart_temp"),
+    hum: document.getElementById("chart_hum"),
+    uv: document.getElementById("chart_uv"),
+    gas: document.getElementById("chart_gas")
 };
 
 // ================================
-// Fetch sensor data periodically
+// Fetch data from server
 // ================================
 async function refresh() {
     try {
         const res = await fetch("/data");
         const data = await res.json();
 
-        updateSensor("s1", Number(data.s1));
-        updateSensor("s2", Number(data.s2));
-        updateSensor("s3", Number(data.s3));
-        updateSensor("s4", Number(data.s4));
-        updateSensor("s5", Number(data.s5));
+        // Update numerical values
+        updateSensor("temp", Number(data.temperature));
+        updateSensor("hum", Number(data.humidity));
+        updateSensor("uv", Number(data.uv));
+        updateSensor("gas", Number(data.gas));
+
+        // Update GPS text fields
+        document.getElementById("lat").textContent = data.latitude.toFixed(6);
+        document.getElementById("lng").textContent = data.longitude.toFixed(6);
+
+        // Format time HH:MM
+        let hh = String(data.hour).padStart(2, "0");
+        let mm = String(data.minute).padStart(2, "0");
+        document.getElementById("time").textContent = `${hh}:${mm}`;
+
     } catch (err) {
         console.log("Error fetching data:", err);
     }
 }
 
 // ================================
-// Update a single sensor
+// Update one sensor
 // ================================
 function updateSensor(id, value) {
-
-    // Update display text
     document.getElementById(id).textContent = value;
 
-    // Apply sensor-specific maximum
     const max = GRAPH_MAX[id];
     if (value < 0) value = 0;
     if (value > max) value = max;
 
-    // Store history (max 10 points)
     history[id].push(value);
     if (history[id].length > 10) history[id].shift();
 
@@ -70,7 +73,7 @@ function updateSensor(id, value) {
 }
 
 // ================================
-// Draw graph with Y-axis labels
+// Draw line graph
 // ================================
 function drawGraph(canvas, values, maxValue) {
     if (!canvas) return;
@@ -89,9 +92,6 @@ function drawGraph(canvas, values, maxValue) {
     const marginLeft = 30;
     const marginBottom = 5;
 
-    // ------------------------------
-    // Draw Y-axis labels + grid
-    // ------------------------------
     ctx.fillStyle = "#ccc";
     ctx.font = "10px Arial";
     ctx.textAlign = "right";
@@ -109,9 +109,6 @@ function drawGraph(canvas, values, maxValue) {
         ctx.stroke();
     }
 
-    // ------------------------------
-    // Draw data line
-    // ------------------------------
     ctx.strokeStyle = "#4db8ff";
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -132,7 +129,7 @@ function drawGraph(canvas, values, maxValue) {
 }
 
 // ================================
-// Start + refresh every 5 seconds
+// Start periodic updates
 // ================================
 refresh();
 setInterval(refresh, 5000);
