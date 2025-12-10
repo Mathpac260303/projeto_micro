@@ -11,6 +11,7 @@ const history = {
     lux: []
 };
 
+// Max values for graph scaling
 const GRAPH_MAX = {
     temp: 50,
     hum: 100,
@@ -28,25 +29,51 @@ const canvases = {
 };
 
 // ================================
-// DRAW GRAPH
+// DRAW GRAPH WITH AXIS LABELS
 // ================================
 function drawGraph(canvas, list, maxValue) {
     const ctx = canvas.getContext("2d");
     const w = canvas.width;
     const h = canvas.height;
 
+    // Clear background
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, w, h);
 
-    ctx.strokeStyle = "#0f0";
-    ctx.beginPath();
+    // Axis styles
+    ctx.strokeStyle = "#444";
+    ctx.lineWidth = 1;
+    ctx.font = "12px Arial";
+    ctx.fillStyle = "#AAA";
 
+    // Draw horizontal grid + labels (5 divisions)
+    for (let i = 0; i <= 5; i++) {
+        const y = (i / 5) * h;
+        const value = maxValue - (i * maxValue / 5);
+
+        // grid line
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+
+        // label
+        ctx.fillText(value.toFixed(0), 5, y - 2);
+    }
+
+    // Draw graph line
     if (list.length < 2) return;
+
+    ctx.strokeStyle = "#0f0";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
 
     for (let i = 0; i < list.length; i++) {
         const x = (i / (HISTORY_MAX - 1)) * w;
         const y = h - (list[i] / maxValue) * h;
-        (i === 0) ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
     }
 
     ctx.stroke();
@@ -67,7 +94,7 @@ function updateSensor(id, value) {
 }
 
 // ================================
-// FALLBACK POLLING (every 1 sec)
+// POLLING (fallback if WS disconnects)
 // ================================
 async function pollData() {
     try {
@@ -82,7 +109,7 @@ async function pollData() {
 setInterval(pollData, 1000);
 
 // ================================
-// APPLY INCOMING DATA
+// APPLY INCOMING SENSOR DATA
 // ================================
 function applyData(d) {
     updateSensor("temp", d.temp);
@@ -114,6 +141,7 @@ function connectWS() {
     };
 
     ws.onclose = () => {
+        console.log("WebSocket disconnected. Reconnecting...");
         setTimeout(connectWS, 2000);
     };
 }
