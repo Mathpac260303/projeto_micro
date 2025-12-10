@@ -1,19 +1,8 @@
 // ================================
-// GRAPH CONFIG
+// HISTORY (60 samples)
 // ================================
-const GRAPH_MAX = {
-    temp: 50,
-    hum: 100,
-    uv: 12,
-    gas: 200,   // CO ppm range
-    lux: 2000   // example upper bound, auto-scale later if needed
-};
+const HISTORY_MAX = 60;
 
-let GRAPH_TICKS = 5;
-
-// ================================
-// History storage (last 10 values)
-// ================================
 const history = {
     temp: [],
     hum: [],
@@ -22,7 +11,14 @@ const history = {
     lux: []
 };
 
-// Canvas references
+const GRAPH_MAX = {
+    temp: 50,
+    hum: 100,
+    uv: 12,
+    gas: 200,
+    lux: 2000
+};
+
 const canvases = {
     temp: document.getElementById("chart_temp"),
     hum: document.getElementById("chart_hum"),
@@ -32,110 +28,94 @@ const canvases = {
 };
 
 // ================================
-// Fetch data from server
+// DRAW GRAPH
 // ================================
-async function refresh() {
-    try {
-        const res = await fetch("/data");
-        const data = await res.json();
-
-        updateSensor("temp", Number(data.temperature));
-        updateSensor("hum", Number(data.humidity));
-        updateSensor("uv", Number(data.uv));
-        updateSensor("gas", Number(data.gas));   // now CO ppm
-        updateSensor("lux", Number(data.lux));
-
-    } catch (err) {
-        console.log("Error fetching data:", err);
-    }
-}
-
-// ================================
-// Update one sensor
-// ================================
-function updateSensor(id, value) {
-    document.getElementById(id).textContent = value.toFixed(1);
-
-    const max = GRAPH_MAX[id];
-    if (value < 0) value = 0;
-    if (value > max) value = max;
-
-    history[id].push(value);
-    if (history[id].length > 10) history[id].shift();
-
-    drawGraph(canvases[id], history[id], max);
-}
-
-// ================================
-// Draw line graph
-// ================================
-function drawGraph(canvas, values, maxValue) {
-    if (!canvas) return;
-
+function drawGraph(canvas, list, maxValue) {
     const ctx = canvas.getContext("2d");
-    const width = canvas.clientWidth || canvas.width;
-    const height = canvas.clientHeight || canvas.height;
+    const w = canvas.width;
+    const h = canvas.height;
 
-    canvas.width = width;
-    canvas.height = height;
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, w, h);
 
-    ctx.clearRect(0, 0, width, height);
-
-    if (values.length === 0) return;
-
-    const marginLeft = 30;
-    const marginBottom = 5;
-
-    ctx.fillStyle = "#ccc";
-    ctx.font = "10px Arial";
-    ctx.textAlign = "right";
-
-    for (let i = 0; i <= GRAPH_TICKS; i++) {
-        const val = (maxValue / GRAPH_TICKS) * i;
-        const y = height - (i / GRAPH_TICKS) * (height - marginBottom);
-
-        ctx.fillText(val.toFixed(0), marginLeft - 5, y + 3);
-
-        ctx.strokeStyle = "#333";
-        ctx.beginPath();
-        ctx.moveTo(marginLeft, y);
-        ctx.lineTo(width, y);
-        ctx.stroke();
-    }
-
-    ctx.strokeStyle = "#4db8ff";
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#0f0";
     ctx.beginPath();
 
-    const n = values.length;
-    const stepX = n > 1 ? (width - marginLeft) / (n - 1) : width;
+    if (list.length < 2) return;
 
-    for (let i = 0; i < n; i++) {
-        const v = values[i];
-        const y = height - marginBottom - (v / maxValue) * (height - marginBottom);
-        const x = marginLeft + stepX * i;
-
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+    for (let i = 0; i < list.length; i++) {
+        const x = (i / (HISTORY_MAX - 1)) * w;
+        const y = h - (list[i] / maxValue) * h;
+        (i === 0) ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
 
     ctx.stroke();
 }
 
 // ================================
-// WebSocket for User Count
+// UPDATE SENSOR FUNCTION
 // ================================
-const socket = new WebSocket(`wss://${window.location.host}`);
+function updateSensor(id, value) {
+    value = Number(value);
+    if (value < 0) value = 0;
+    if (value > GRAPH_MAX[id]) value = GRAPH_MAX[id];
 
-socket.onmessage = event => {
-    const data = JSON.parse(event.data);
-    if (data.users !== undefined) {
-        document.getElementById("users").textContent = data.users;
+    history[id].push(value);
+    if (history[id].length > HISTORY_MAX) history[id].shift();
+
+    drawGraph(canvases[id], history[id], GRAPH_MAX[id]);
+}
+
+// ================================
+// FALLBACK POLLING (every 1 sec)
+// ================================
+async function pollData() {
+    try {
+        const res = await fetch("/data");
+        const data = await res.json();
+        applyData(data);
+    } catch (err) {
+        console.log("Polling error:", err);
     }
-};
+}
+
+setInterval(pollData, 1000);
 
 // ================================
-// Start periodic updates
+// APPLY INCOMING DATA
 // ================================
-refresh();
-setInterval(refresh, 5000);
+function applyData(d) {
+    updateSensor("temp", d.temp);
+    updateSensor("hum", d.hum);
+    updateSensor("uv", d.uv);
+    updateSensor("gas", d.gas);
+    updateSensor("lux", d.lux);
+}
+
+// ================================
+// WEB SOCKET LIVE UPDATES
+// ================================
+let ws;
+
+function connectWS() {
+    ws = new WebSocket(`wss://${window.location.host}`);
+
+    ws.onmessage = (msg) => {
+        const data = JSON.parse(msg.data);
+
+        if (data.type === "users") {
+            document.getElementById("users").textContent =
+                "Users online: " + data.count;
+        }
+
+        if (data.type === "data") {
+            applyData(data.sensorData);
+        }
+    };
+
+    ws.onclose = () => {
+        setTimeout(connectWS, 2000);
+    };
+}
+
+connectWS();
