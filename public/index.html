@@ -2,50 +2,65 @@
 <html>
 <head>
     <title>Sensor Dashboard</title>
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial;
+            background: #111;
+            color: white;
+            text-align: center;
+        }
+        .graph-container {
+            width: 400px;
+            margin: 20px auto;
+            background: #222;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        canvas {
+            width: 100%;
+            height: 150px;
+        }
+        #users {
+            position: fixed;
+            top: 10px;
+            right: 20px;
+            color: #0f0;
+            font-size: 20px;
+        }
+    </style>
 </head>
+
 <body>
 
-<h1>Sensor Dashboard</h1>
+<h1>Weather Station Dashboard</h1>
+<div id="users">Users online: 0</div>
 
-<!-- Connected users badge -->
-<div id="users-box">Users Online: <span id="users">0</span></div>
+<div class="graph-container">
+    <h3>Temperature (°C)</h3>
+    <canvas id="chart_temp"></canvas>
+</div>
 
-<!-- Sensor GRID -->
-<div class="grid">
+<div class="graph-container">
+    <h3>Humidity (%)</h3>
+    <canvas id="chart_hum"></canvas>
+</div>
 
-    <!-- Temperature -->
-    <div class="card">
-        <p>Temperature (°C): <span id="temp">0</span></p>
-        <canvas id="chart_temp" width="300" height="120"></canvas>
-    </div>
+<div class="graph-container">
+    <h3>UV Index</h3>
+    <canvas id="chart_uv"></canvas>
+</div>
 
-    <!-- Humidity -->
-    <div class="card">
-        <p>Humidity (%): <span id="hum">0</span></p>
-        <canvas id="chart_hum" width="300" height="120"></canvas>
-    </div>
+<div class="graph-container">
+    <h3>CO Level (ppm)</h3>
+    <canvas id="chart_gas"></canvas>
+</div>
 
-    <!-- UV Index -->
-    <div class="card">
-        <p>UV Index: <span id="uv">0</span></p>
-        <canvas id="chart_uv" width="300" height="120"></canvas>
-    </div>
-
-    <!-- CO ppm -->
-    <div class="card">
-        <p>CO Level (ppm): <span id="gas">0</span></p>
-        <canvas id="chart_gas" width="300" height="120"></canvas>
-    </div>
-
-    <!-- Lux -->
-    <div class="card">
-        <p>Lux: <span id="lux">0</span></p>
-        <canvas id="chart_lux" width="300" height="120"></canvas>
-    </div>
-
+<div class="graph-container">
+    <h3>Lux (lx)</h3>
+    <canvas id="chart_lux"></canvas>
 </div>
 
 <script src="script.js"></script>
+
 </body>
 </html>
