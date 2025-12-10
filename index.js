@@ -1,63 +1,73 @@
 const express = require("express");
 const app = express();
+const http = require("http").createServer(app);
+const WebSocket = require("ws");
 
 // Allow JSON body parsing
 app.use(express.json());
 
-// Serve frontend files from public/
+// Serve frontend files
 app.use(express.static("public"));
 
-// =======================================
-// Stored sensor data (latest values)
-// =======================================
+// ==============================
+// Stored latest sensor data
+// ==============================
 let sensors = {
     temperature: 0,
     humidity: 0,
     uv: 0,
-    gas: 0,
-    latitude: 0,
-    longitude: 0,
-    hour: 0,
-    minute: 0
+    gas: 0,   // CO ppm
+    lux: 0
 };
 
-// =======================================
-// ESP32 -> Server : POST /update
-// =======================================
+// ==============================
+// ESP32 -> POST /update
+// ==============================
 app.post("/update", (req, res) => {
-    const data = req.body;
+    const d = req.body;
 
-    // Update only if value exists
-    if (data.temperature !== undefined) sensors.temperature = Number(data.temperature);
-    if (data.humidity !== undefined) sensors.humidity = Number(data.humidity);
-    if (data.uv !== undefined) sensors.uv = Number(data.uv);
-    if (data.gas !== undefined) sensors.gas = Number(data.gas);
+    if (d.temperature !== undefined) sensors.temperature = Number(d.temperature);
+    if (d.humidity !== undefined) sensors.humidity = Number(d.humidity);
+    if (d.uv !== undefined) sensors.uv = Number(d.uv);
+    if (d.gas !== undefined) sensors.gas = Number(d.gas);
+    if (d.lux !== undefined) sensors.lux = Number(d.lux);
 
-    if (data.latitude !== undefined) sensors.latitude = Number(data.latitude);
-    if (data.longitude !== undefined) sensors.longitude = Number(data.longitude);
-
-    if (data.hour !== undefined) sensors.hour = Number(data.hour);
-    if (data.minute !== undefined) sensors.minute = Number(data.minute);
-
-    console.log("Updated sensor data:", sensors);
-
+    console.log("Updated:", sensors);
     res.json({ status: "ok" });
 });
 
-// =======================================
+// ==============================
 // FRONTEND -> GET /data
-// =======================================
+// ==============================
 app.get("/data", (req, res) => {
     res.json(sensors);
 });
 
-// Root route
-app.get("/", (req, res) => {
-    res.sendFile(__dirname + "/public/index.html");
+// ==============================
+// WebSocket: Track connected users
+// ==============================
+const wss = new WebSocket.Server({ server: http });
+
+function broadcastUserCount() {
+    const count = wss.clients.size;
+    const msg = JSON.stringify({ users: count });
+
+    wss.clients.forEach(ws => {
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.send(msg);
+        }
+    });
+}
+
+wss.on("connection", ws => {
+    broadcastUserCount();
+    ws.on("close", broadcastUserCount);
 });
 
+// ==============================
 // Start server
+// ==============================
 const port = process.env.PORT || 3000;
-app.listen(port, () => {
+http.listen(port, () => {
     console.log("Server running on port " + port);
 });
