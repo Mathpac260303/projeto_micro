@@ -2,10 +2,11 @@
 // GRAPH CONFIG
 // ================================
 const GRAPH_MAX = {
-    temp: 50,     // °C max
-    hum: 100,     // %
-    uv: 12,       // UV Index range
-    gas: 10       // 0–10 scale
+    temp: 50,
+    hum: 100,
+    uv: 12,
+    gas: 200,   // CO ppm range
+    lux: 2000   // example upper bound, auto-scale later if needed
 };
 
 let GRAPH_TICKS = 5;
@@ -17,7 +18,8 @@ const history = {
     temp: [],
     hum: [],
     uv: [],
-    gas: []
+    gas: [],
+    lux: []
 };
 
 // Canvas references
@@ -25,7 +27,8 @@ const canvases = {
     temp: document.getElementById("chart_temp"),
     hum: document.getElementById("chart_hum"),
     uv: document.getElementById("chart_uv"),
-    gas: document.getElementById("chart_gas")
+    gas: document.getElementById("chart_gas"),
+    lux: document.getElementById("chart_lux")
 };
 
 // ================================
@@ -36,20 +39,11 @@ async function refresh() {
         const res = await fetch("/data");
         const data = await res.json();
 
-        // Update numerical values
         updateSensor("temp", Number(data.temperature));
         updateSensor("hum", Number(data.humidity));
         updateSensor("uv", Number(data.uv));
-        updateSensor("gas", Number(data.gas));
-
-        // Update GPS text fields
-        document.getElementById("lat").textContent = data.latitude.toFixed(6);
-        document.getElementById("lng").textContent = data.longitude.toFixed(6);
-
-        // Format time HH:MM
-        let hh = String(data.hour).padStart(2, "0");
-        let mm = String(data.minute).padStart(2, "0");
-        document.getElementById("time").textContent = `${hh}:${mm}`;
+        updateSensor("gas", Number(data.gas));   // now CO ppm
+        updateSensor("lux", Number(data.lux));
 
     } catch (err) {
         console.log("Error fetching data:", err);
@@ -60,7 +54,7 @@ async function refresh() {
 // Update one sensor
 // ================================
 function updateSensor(id, value) {
-    document.getElementById(id).textContent = value;
+    document.getElementById(id).textContent = value.toFixed(1);
 
     const max = GRAPH_MAX[id];
     if (value < 0) value = 0;
@@ -127,6 +121,18 @@ function drawGraph(canvas, values, maxValue) {
 
     ctx.stroke();
 }
+
+// ================================
+// WebSocket for User Count
+// ================================
+const socket = new WebSocket(`wss://${window.location.host}`);
+
+socket.onmessage = event => {
+    const data = JSON.parse(event.data);
+    if (data.users !== undefined) {
+        document.getElementById("users").textContent = data.users;
+    }
+};
 
 // ================================
 // Start periodic updates
