@@ -8,35 +8,42 @@
 
 <h1>Sensor Dashboard</h1>
 
-<!-- GPS & Time Section -->
-<div class="gps">
-    <p>Latitude: <span id="lat">--</span></p>
-    <p>Longitude: <span id="lng">--</span></p>
-    <p>Time (UTC): <span id="time">--:--</span></p>
-</div>
+<!-- Connected users badge -->
+<div id="users-box">Users Online: <span id="users">0</span></div>
 
-<!-- Temperature -->
-<div class="sensor">
-    <p>Temperature (°C): <span id="temp">0</span></p>
-    <canvas id="chart_temp" width="300" height="120"></canvas>
-</div>
+<!-- Sensor GRID -->
+<div class="grid">
 
-<!-- Humidity -->
-<div class="sensor">
-    <p>Humidity (%): <span id="hum">0</span></p>
-    <canvas id="chart_hum" width="300" height="120"></canvas>
-</div>
+    <!-- Temperature -->
+    <div class="card">
+        <p>Temperature (°C): <span id="temp">0</span></p>
+        <canvas id="chart_temp" width="300" height="120"></canvas>
+    </div>
 
-<!-- UV Index -->
-<div class="sensor">
-    <p>UV Index: <span id="uv">0</span></p>
-    <canvas id="chart_uv" width="300" height="120"></canvas>
-</div>
+    <!-- Humidity -->
+    <div class="card">
+        <p>Humidity (%): <span id="hum">0</span></p>
+        <canvas id="chart_hum" width="300" height="120"></canvas>
+    </div>
 
-<!-- Gas Level -->
-<div class="sensor">
-    <p>Gas Level (0–10): <span id="gas">0</span></p>
-    <canvas id="chart_gas" width="300" height="120"></canvas>
+    <!-- UV Index -->
+    <div class="card">
+        <p>UV Index: <span id="uv">0</span></p>
+        <canvas id="chart_uv" width="300" height="120"></canvas>
+    </div>
+
+    <!-- CO ppm -->
+    <div class="card">
+        <p>CO Level (ppm): <span id="gas">0</span></p>
+        <canvas id="chart_gas" width="300" height="120"></canvas>
+    </div>
+
+    <!-- Lux -->
+    <div class="card">
+        <p>Lux: <span id="lux">0</span></p>
+        <canvas id="chart_lux" width="300" height="120"></canvas>
+    </div>
+
 </div>
 
 <script src="script.js"></script>
