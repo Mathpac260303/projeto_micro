@@ -2,11 +2,18 @@
   "name": "projeto_micro",
   "version": "1.0.0",
   "main": "index.js",
-
+  "description": "ESP32 sensor dashboard with WebSockets",
+  
   "scripts": {
     "start": "node index.js"
   },
+
   "dependencies": {
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "ws": "^8.17.0"
+  },
+
+  "engines": {
+    "node": ">=18"
   }
 }
