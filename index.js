@@ -3,71 +3,76 @@ const app = express();
 const http = require("http").createServer(app);
 const WebSocket = require("ws");
 
-// Allow JSON body parsing
 app.use(express.json());
-
-// Serve frontend files
 app.use(express.static("public"));
 
-// ==============================
-// Stored latest sensor data
-// ==============================
-let sensors = {
-    temperature: 0,
-    humidity: 0,
-    uv: 0,
-    gas: 0,   // CO ppm
-    lux: 0
+// ================================
+// CURRENT SENSOR DATA
+// ================================
+let sensorData = {
+  temp: 0,
+  hum: 0,
+  uv: 0,
+  gas: 0,
+  lux: 0
 };
 
-// ==============================
-// ESP32 -> POST /update
-// ==============================
-app.post("/update", (req, res) => {
-    const d = req.body;
-
-    if (d.temperature !== undefined) sensors.temperature = Number(d.temperature);
-    if (d.humidity !== undefined) sensors.humidity = Number(d.humidity);
-    if (d.uv !== undefined) sensors.uv = Number(d.uv);
-    if (d.gas !== undefined) sensors.gas = Number(d.gas);
-    if (d.lux !== undefined) sensors.lux = Number(d.lux);
-
-    console.log("Updated:", sensors);
-    res.json({ status: "ok" });
-});
-
-// ==============================
-// FRONTEND -> GET /data
-// ==============================
-app.get("/data", (req, res) => {
-    res.json(sensors);
-});
-
-// ==============================
-// WebSocket: Track connected users
-// ==============================
+// ================================
+// WEB SOCKET SERVER
+// ================================
 const wss = new WebSocket.Server({ server: http });
+let onlineUsers = 0;
+
+wss.on("connection", (ws) => {
+  onlineUsers++;
+  broadcastUserCount();
+  console.log("Client connected.");
+
+  ws.on("close", () => {
+    onlineUsers--;
+    broadcastUserCount();
+    console.log("Client disconnected.");
+  });
+});
 
 function broadcastUserCount() {
-    const count = wss.clients.size;
-    const msg = JSON.stringify({ users: count });
-
-    wss.clients.forEach(ws => {
-        if (ws.readyState === WebSocket.OPEN) {
-            ws.send(msg);
-        }
-    });
+  const msg = JSON.stringify({ type: "users", count: onlineUsers });
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) client.send(msg);
+  });
 }
 
-wss.on("connection", ws => {
-    broadcastUserCount();
-    ws.on("close", broadcastUserCount);
+function broadcastData() {
+  const msg = JSON.stringify({ type: "data", sensorData });
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) client.send(msg);
+  });
+}
+
+// ================================
+// ENDPOINT RECEIVING ESP32 DATA
+// ================================
+app.post("/update", (req, res) => {
+  const { temp, hum, uv, gas, lux } = req.body;
+
+  sensorData.temp = Number(temp);
+  sensorData.hum = Number(hum);
+  sensorData.uv = Number(uv);
+  sensorData.gas = Number(gas);
+  sensorData.lux = Number(lux);
+
+  broadcastData();
+
+  res.send("OK");
 });
 
-// ==============================
-// Start server
-// ==============================
-const port = process.env.PORT || 3000;
-http.listen(port, () => {
-    console.log("Server running on port " + port);
+// ================================
+// ENDPOINT FOR DASHBOARD FETCH (fallback)
+// ================================
+app.get("/data", (req, res) => {
+  res.json(sensorData);
 });
+
+// ================================
+const PORT = process.env.PORT || 10000;
+http.listen(PORT, () => console.log("Server running on port " + PORT));
