@@ -11,7 +11,6 @@ const history = {
     lux: []
 };
 
-// Max values for graph scaling
 const GRAPH_MAX = {
     temp: 50,
     hum: 100,
@@ -29,45 +28,40 @@ const canvases = {
 };
 
 // ================================
-// DRAW GRAPH WITH AXIS LABELS
+// DRAW GRAPH WITH Y-AXIS SCALE
 // ================================
 function drawGraph(canvas, list, maxValue) {
     const ctx = canvas.getContext("2d");
     const w = canvas.width;
     const h = canvas.height;
 
-    // Clear background
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, w, h);
 
-    // Axis styles
     ctx.strokeStyle = "#444";
     ctx.lineWidth = 1;
     ctx.font = "12px Arial";
     ctx.fillStyle = "#AAA";
 
-    // Draw horizontal grid + labels (5 divisions)
+    // grid + labels
     for (let i = 0; i <= 5; i++) {
         const y = (i / 5) * h;
-        const value = maxValue - (i * maxValue / 5);
+        const label = maxValue - (i * maxValue / 5);
 
-        // grid line
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(w, y);
         ctx.stroke();
 
-        // label
-        ctx.fillText(value.toFixed(0), 5, y - 2);
+        ctx.fillText(label.toFixed(0), 5, y - 2);
     }
 
-    // Draw graph line
     if (list.length < 2) return;
 
     ctx.strokeStyle = "#0f0";
     ctx.lineWidth = 2;
-    ctx.beginPath();
 
+    ctx.beginPath();
     for (let i = 0; i < list.length; i++) {
         const x = (i / (HISTORY_MAX - 1)) * w;
         const y = h - (list[i] / maxValue) * h;
@@ -75,12 +69,11 @@ function drawGraph(canvas, list, maxValue) {
         if (i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
     }
-
     ctx.stroke();
 }
 
 // ================================
-// UPDATE SENSOR FUNCTION
+// UPDATE A SINGLE SENSOR
 // ================================
 function updateSensor(id, value) {
     value = Number(value);
@@ -94,7 +87,18 @@ function updateSensor(id, value) {
 }
 
 // ================================
-// POLLING (fallback if WS disconnects)
+// APPLY DATA RECEIVED
+// ================================
+function applyData(d) {
+    updateSensor("temp", d.temp);
+    updateSensor("hum", d.hum);
+    updateSensor("uv",   d.uv);
+    updateSensor("gas",  d.gas);
+    updateSensor("lux",  d.lux);
+}
+
+// ================================
+// POLLING (every 1s)
 // ================================
 async function pollData() {
     try {
@@ -105,19 +109,7 @@ async function pollData() {
         console.log("Polling error:", err);
     }
 }
-
 setInterval(pollData, 1000);
-
-// ================================
-// APPLY INCOMING SENSOR DATA
-// ================================
-function applyData(d) {
-    updateSensor("temp", d.temp);
-    updateSensor("hum", d.hum);
-    updateSensor("uv", d.uv);
-    updateSensor("gas", d.gas);
-    updateSensor("lux", d.lux);
-}
 
 // ================================
 // WEB SOCKET LIVE UPDATES
@@ -141,7 +133,7 @@ function connectWS() {
     };
 
     ws.onclose = () => {
-        console.log("WebSocket disconnected. Reconnecting...");
+        console.log("WS closed, retrying...");
         setTimeout(connectWS, 2000);
     };
 }
