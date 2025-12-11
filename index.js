@@ -26,6 +26,7 @@ let onlineUsers = 0;
 wss.on("connection", (ws) => {
   onlineUsers++;
   broadcastUserCount();
+
   console.log("Client connected.");
 
   ws.on("close", () => {
@@ -36,14 +37,22 @@ wss.on("connection", (ws) => {
 });
 
 function broadcastUserCount() {
-  const msg = JSON.stringify({ type: "users", count: onlineUsers });
+  const msg = JSON.stringify({
+    type: "users",
+    count: onlineUsers
+  });
+
   wss.clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) client.send(msg);
   });
 }
 
 function broadcastData() {
-  const msg = JSON.stringify({ type: "data", sensorData });
+  const msg = JSON.stringify({
+    type: "data",
+    sensorData
+  });
+
   wss.clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) client.send(msg);
   });
@@ -52,22 +61,22 @@ function broadcastData() {
 // ================================
 // ENDPOINT RECEIVING ESP32 DATA
 // ================================
+// ESP32 sends: temperature, humidity, uv, gas, lux, ldr
 app.post("/update", (req, res) => {
-  const { temp, hum, uv, gas, lux } = req.body;
+  const body = req.body;
 
-  sensorData.temp = Number(temp);
-  sensorData.hum = Number(hum);
-  sensorData.uv = Number(uv);
-  sensorData.gas = Number(gas);
-  sensorData.lux = Number(lux);
+  sensorData.temp = Number(body.temperature);
+  sensorData.hum  = Number(body.humidity);
+  sensorData.uv   = Number(body.uv);
+  sensorData.gas  = Number(body.gas);
+  sensorData.lux  = Number(body.lux);
 
   broadcastData();
-
   res.send("OK");
 });
 
 // ================================
-// ENDPOINT FOR DASHBOARD FETCH (fallback)
+// DASHBOARD FALLBACK POLLING
 // ================================
 app.get("/data", (req, res) => {
   res.json(sensorData);
